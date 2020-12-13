@@ -17,19 +17,20 @@ var url = "https://github.com/web-engineering-tuwien/recipe-search-live-demo.git
 
 async function get_all_commits_sha() {
   const repo = await nodegit.Repository.open(local)
-  const current_branch = await repo.getCurrentBranch()
 
-  console.log("On " + current_branch.shorthand() + " (" + current_branch.target() + ")")
-
-  const latest_commit = await repo.getBranchCommit(current_branch.shorthand())
+  const latest_master_commit = await repo.getMasterCommit()
 
   const commits = await new Promise(function (resolve, reject) {
-    var hist = latest_commit.history()
+    var hist = latest_master_commit.history()
     hist.start()
     hist.on("end", resolve);
     hist.on("error", reject);
   });
 
+  /**
+   * this part here is important in case you want to get the commits in increasing chronological order (oldest first)
+   */
+  commits.reverse()
 
   var commits_sha = []
 
@@ -44,11 +45,6 @@ async function get_all_commits_sha() {
     await walk_through_tree(tree)
   }
 
-
-  //console.log("before call")
-  //var file_content = await get_file_content_for_commit("index.html", commits_sha[0]).then(console.log("done"))
-  //console.log(commits_sha)
-
 }
 
 
@@ -57,9 +53,7 @@ async function get_all_commits_sha() {
  * @param {*} entry a file or directory in a commit's working tree (so far it only works with files)
  */
 async function get_file_content_for_commit(entry /*, commit_sha*/) {
-  //const repo = await nodegit.Repository.open('./RecipePuppy')
-  //const commit = await repo.getCommit(commit_sha)
-  //const entry = await commit.getEntry(file_path)
+
   const entry_blob = await entry.getBlob()
 
   console.log(entry.name(), entry.sha(), entry_blob.rawsize() + "b");
@@ -86,7 +80,9 @@ async function walk_through_tree(tree) {
 }
 
 
-/**This function will call walk_through_tree() that calls get_file_content_for_commit() */
+/**
+ * This function will call walk_through_tree() that calls get_file_content_for_commit() 
+ * */
 get_all_commits_sha().then(console.log("DOOOONE"))
 
 
