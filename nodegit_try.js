@@ -30,9 +30,10 @@ async function get_all_commits_sha() {
     hist.on("error", reject);
   });
 
+
   var commits_sha = []
 
-  for (var i = 0; i < 1/*0*/; i++) {
+  for (var i = 0; i < commits.length; i++) {
     //var sha = commits[i].sha().substr(0,7),   for the sha shorthand, but getting a file by sha shorthand doesn't work at the moment
     var sha = commits[i].sha(),
       msg = commits[i].message().split('\n')[0]; //will need this later so I'm leaving it in
