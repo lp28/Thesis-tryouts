@@ -4,8 +4,8 @@ var nodegit = require("nodegit"),
 
 
 
-var url = "https://github.com/web-engineering-tuwien/recipe-search-live-demo.git",
-  local = "./RecipePuppy",
+var url = "https://github.com/web-engineering-tuwien/recipe-search-live-demo.git", //in case we want to clone a repo
+  local = "/Users/lorianaporumb/Desktop/RecipePuppy" 
   cloneOpts = {};
 
 
