@@ -34,14 +34,18 @@ async function get_all_commits_sha() {
 
   for (var i = 0; i < commits.length; i++) {
     //var sha = commits[i].sha().substr(0,7),   for the sha shorthand, but getting a file by sha shorthand doesn't work at the moment
+    /*
     var sha = commits[i].sha(),
       msg = commits[i].message().split('\n')[0]; //will need this later so I'm leaving it in
+      */
     //console.log(sha + " " + msg);
     
 
     if(i == 0) {
+        //get (and display) all file contents since this is the first commit
         await display_tree(commits[i])
     } else {
+        //only get file contents for files that changed since the prev commit
         await display_tree_diff(commits[i], commits[i - 1])
     }
    
@@ -60,17 +64,14 @@ async function get_file_content_for_commit(entry /*, commit_sha*/) {
 
   console.log(entry.name(), entry.sha(), entry_blob.rawsize() + "b");
   console.log("========================================================\n\n");
-  //var firstTenLines = entry_blob.toString().split("\n").slice(0, 10).join("\n");
   var lines = entry_blob.toString();
-  //console.log(firstTenLines);
   console.log(lines)
-  console.log("...")
 }
 
 
 /**
  * Gets the tree of the commit given as an argument
- * Starts a tree walker on the tree
+ * Starts a tree walker
  * When an entry is found, it calls get_content_for_commit() that gets its content
  * @param {*} tree a commit's working tree
  */
@@ -97,6 +98,7 @@ async function get_commit_diffs(current_commit, prev_commit) {
     const diff = await prev_tree.diff(tree);
     const patches = await diff.patches();
     var paths_to_diff_files = []
+
     for (const patch of patches) {
         paths_to_diff_files.push(patch.newFile().path());
     }
@@ -118,7 +120,7 @@ async function display_tree_diff(current_commit, prev_commit) {
 
   var tree = await current_commit.getTree()
   var walker = tree.walk();
-  walker.on("entry", async function (entry) {
+  walker.on("entry", async function (entry) { //only get (display) the file contents for files that have been changed since the last commit
     if(paths_to_diff_files.includes(entry.path())) {
         await get_file_content_for_commit(entry)
     }
@@ -128,10 +130,8 @@ async function display_tree_diff(current_commit, prev_commit) {
 }
 
 
-/**
- * This function will call walk_through_tree() that calls get_file_content_for_commit() 
- * */
-get_all_commits_sha().then(console.log("DOOOONE"))
+
+get_all_commits_sha().then(console.log("DONE"))
 
 
 
