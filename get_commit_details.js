@@ -38,14 +38,21 @@ async function get_next_commit(current_sha) {
     const next_commit = `git log --reverse --pretty=%H master | grep -A 1 $(git rev-parse ${current_sha}) | tail -n1`
     const access_repo = `cd ${local}`
 
-    /*TODO: make sure to move onto the next next commit in case the next one is a theory commit*/
+    //get sha of next commit
     const next_commit_command = await exec(access_repo + " && " + next_commit)
     const next_commit_sha = next_commit_command.stdout
 
-    console.log(next_commit_sha)
-    /*const repo = await nodegit.Repository.open(local)
-    const nodegit_next_commit = await repo.getCommit(next_commit_sha)
-    console.log(nodegit_next_commit.message())*/
+    //get message of next commit to check if it should be ignored
+    const commit_message = `git log --format=%B -n 1 ${next_commit_sha}`
+    const message_command = await exec (access_repo + " && " + commit_message)
+    const message = message_command.stdout
+
+    //if the next commit is ignored (aka a theory commit), recursively jump to the next non-ignored one
+    if (message.toLowerCase().startsWith("adds event")) { //TODO: replace "adds event with a pattern like "#ignore#""
+      return get_next_commit(next_commit_sha)
+    } 
+
+    return next_commit_sha
 }
 
 
@@ -115,6 +122,30 @@ async function get_theory_commit_sha(commit_sha) {
 }
 
 
+async function git_show(commit_sha) {
+  
+  const search_by_message = `git show -U1000 ${commit_sha}`
+  const access_repo = `cd ${local}`
+
+  const show_command = await exec(access_repo + " && " + search_by_message)
+  const all_changes = show_command.stdout
+
+  let file_array = all_changes.split(/diff --git[\S\s]*?\+\+\+ .?\//) //split by the whole hunk header
+  file_array = file_array.slice(1, file_array.length)
+
+  file_array.forEach(function(file) {
+    file = file.replace(/@@ .* @@\n/, "") //get rid of lines added, lines removed headers in code
+    file = file.replace(/\\ No newline at end of file/, "") //get rid of this weird info at the end of files
+    let tokens = file.split('\n')
+    let file_name = tokens[0];
+    console.log(`============================= NEW FILE: ${file_name} =============================`)
+    let contents = tokens.slice(1, tokens.length).join('\n')
+    console.log(contents)
+  })
+
+}
+
+
 /*
 async function get_all_commits_sha() {
     const repo = await nodegit.Repository.open(local)
@@ -151,9 +182,10 @@ async function get_all_commits_sha() {
 
 
 
-/*get_first_commit().then(console.log("DOONE"))
-get_next_commit("35949ff7dd29c197171339ae6a51389b30787c8f").then(console.log("DOONE"))*/
+//get_first_commit().then(console.log("DOONE"))
+//get_next_commit("35949ff7dd29c197171339ae6a51389b30787c8f").then((value) => console.log(value))
 //get_diff('13a435e480e9ced68a06414d65589d7b2fe90964').then(console.log("DOONE"))
 //get_diff('12c4e858812fa47eed16fcd689708a1f9bc75555').then(console.log("DOONE"))
 //get_all_commits_sha().then(console.log('Done'))
-get_theory_commit_sha("Introducing").then(console.log("GOT SHA"))
+//get_theory_commit_sha("Introducing").then(console.log("GOT SHA"))
+git_show('12c4e858812fa47eed16fcd689708a1f9bc75555').then(console.log("DOONE"))
