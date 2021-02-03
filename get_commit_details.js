@@ -146,6 +146,90 @@ async function git_show(commit_sha) {
 }
 
 
+class ChangedFile {
+  constructor(current_path, previous, current) {
+    this.current_path = current_path;
+    this.previous = previous;
+    this.current = current;
+  }
+}
+
+//get files that changed between 2 commits: git diff --name-only <commit1> <commit2>
+//get parent of commit: git rev-parse ${SHA}^
+
+async function test_function(commit_sha) {
+  
+  //const search_by_message = `git show -U1000 ${commit_sha}`
+  const access_repo = `cd ${local}`
+  const get_parent = `git rev-parse ${commit_sha}^`
+  
+
+  const parent_command = await exec(access_repo + " && " + get_parent)
+  const parent_sha = parent_command.stdout.replace(/(\r\n|\n|\r)/gm, "")
+
+  const get_modified_files_paths = `git diff --name-only ${parent_sha} ${commit_sha}`
+  const modified_paths_command = await exec(access_repo + " && " + get_modified_files_paths)
+  const modified_file_paths = modified_paths_command.stdout.split("\n")
+  
+
+//git cat-file -p 95e54cb16faf90d3d7b1652dd44db78f30000d23:index.html
+  
+
+  //let checkout_file = `git checkout ${parent_sha} ${modified_file_paths[1]}`
+  //let cat_file = `git cat-file -p HEAD:${modified_file_paths[1]}`
+  console.log(modified_file_paths)
+  let modified_files = []
+  for (let i = 0; i < modified_file_paths.length; i ++) {
+
+    let path = modified_file_paths[i]
+    console.log(`Path: ${path}`)
+    let file = new ChangedFile(path, '', '')
+    let sha = parent_sha
+    try {
+      let cat_file_at_commit = `git cat-file -p ${sha}:${path}`
+      let cat_file_command = await exec(access_repo + " && " + cat_file_at_commit)
+      const file_content = cat_file_command.stdout
+      file.previous = file_content
+    } catch (error) {
+      //console.log(error)
+    }
+
+    sha = commit_sha
+    try {
+      let cat_file_at_commit = `git cat-file -p ${sha}:${path}`
+      let cat_file_command = await exec(access_repo + " && " + cat_file_at_commit)
+      const file_content = cat_file_command.stdout
+      file.current = file_content
+    } catch (error) {
+      //console.log(error)
+    }
+    
+    modified_files.push(file)
+  }
+
+  
+  /*for (let i = 0; i < modified_files.length; i ++) {
+    let file = modified_files[i]
+    console.log(`************************************ ${file.path} ********************************`)
+    console.log("###########PREVIOUS###########")
+    console.log(file.previous)
+    console.log("###########CURRENT###########")
+    console.log(file.current)
+    
+   //console.log(modified_file_paths[i])
+  }*/
+  
+
+}
+
+
+
+
+
+
+
+
+
 /*
 async function get_all_commits_sha() {
     const repo = await nodegit.Repository.open(local)
@@ -188,4 +272,11 @@ async function get_all_commits_sha() {
 //get_diff('12c4e858812fa47eed16fcd689708a1f9bc75555').then(console.log("DOONE"))
 //get_all_commits_sha().then(console.log('Done'))
 //get_theory_commit_sha("Introducing").then(console.log("GOT SHA"))
-git_show('12c4e858812fa47eed16fcd689708a1f9bc75555').then(console.log("DOONE"))
+//git_show('12c4e858812fa47eed16fcd689708a1f9bc75555').then(console.log("DOONE"))
+
+test_function('12c4e858812fa47eed16fcd689708a1f9bc75555').then(console.log("DOONE"))
+
+//get_commit_diffs('12c4e858812fa47eed16fcd689708a1f9bc75555', '95e54cb16faf90d3d7b1652dd44db78f30000d23') 
+
+
+//git cat-file -p 95e54cb16faf90d3d7b1652dd44db78f30000d23:index.html
