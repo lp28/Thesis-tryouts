@@ -15,6 +15,7 @@ var url = "https://github.com/web-engineering-tuwien/recipe-search-live-demo.git
 const { promisify } = require('util');
 const exec = promisify(require('child_process').exec)
 
+//will need
 async function get_first_commit() {
     const first_commit = 'git rev-list --max-parents=0 HEAD'
     const access_repo = `cd ${local}`
@@ -32,7 +33,7 @@ async function get_first_commit() {
 
 };
 
-
+//will need
 async function get_next_commit(current_sha) {
 
     const next_commit = `git log --reverse --pretty=%H master | grep -A 1 $(git rev-parse ${current_sha}) | tail -n1`
@@ -56,60 +57,9 @@ async function get_next_commit(current_sha) {
 }
 
 
-async function get_diff(commit_sha) {
-    const repo = await nodegit.Repository.open(local)
-    const commit = await repo.getCommit(commit_sha)
-    console.log(commit.message())
-    const diff_array = await commit.getDiff()
-
-    const diff_files = await get_diff_for_files(diff_array)
-
-    /*TODO: return some object here */
-
-    diff_files.forEach(function(file) {
-      console.log("============================= NEW FILE =============================")
-      console.log(file)
-    })
-      
-}
 
 
-
-async function get_diff_for_files(diff_array) {
-  var diffFiles = []
-
-  var i;
-  for (i=0; i<diff_array.length; i++) { 
-    var patches = await diff_array[i].patches()
-    
-    var j;
-    for (j=0; j<patches.length; j++) {
-      var hunks = await patches[j].hunks()
-      var diffFile = ''
-
-      var k;
-      for (k=0; k<hunks.length; k++) {
-        var lines = await hunks[k].lines()
-
-        var l;
-        for (l=0; l<lines.length; l++) {
-          diffFile += String.fromCharCode(lines[l].origin()) +
-            lines[l].content().trim() + '\n'
-        }
-      }
-
-      diffFiles.push(diffFile)
-    }
-
-    
-  }
-
-  return diffFiles;
-    
-}
-
-
-
+//very likely i won't need this either
 async function get_theory_commit_sha(commit_sha) {
   //here we'll insert a pattern instead (aka:THEORY#some_sha#), as soon as we have a tryout repo
   const search_by_message = `git log --all --grep=${commit_sha}`
@@ -121,7 +71,7 @@ async function get_theory_commit_sha(commit_sha) {
   console.log(theory_sha)
 }
 
-
+//very likely I won't need git_show
 async function git_show(commit_sha) {
   
   const search_by_message = `git show -U1000 ${commit_sha}`
@@ -146,6 +96,10 @@ async function git_show(commit_sha) {
 }
 
 
+
+
+//****************  CURRENT VERSION for getting file contents  ****************
+
 class ChangedFile {
   constructor(current_path, previous, current) {
     this.current_path = current_path;
@@ -154,8 +108,6 @@ class ChangedFile {
   }
 }
 
-//get files that changed between 2 commits: git diff --name-only <commit1> <commit2>
-//get parent of commit: git rev-parse ${SHA}^
 
 async function test_function(commit_sha) {
   
@@ -169,14 +121,10 @@ async function test_function(commit_sha) {
 
   const get_modified_files_paths = `git diff --name-only ${parent_sha} ${commit_sha}`
   const modified_paths_command = await exec(access_repo + " && " + get_modified_files_paths)
-  const modified_file_paths = modified_paths_command.stdout.split("\n")
-  
+  let modified_file_paths = modified_paths_command.stdout.split("\n")
+  modified_file_paths = modified_file_paths.slice(0, modified_file_paths.length-1)
 
-//git cat-file -p 95e54cb16faf90d3d7b1652dd44db78f30000d23:index.html
-  
 
-  //let checkout_file = `git checkout ${parent_sha} ${modified_file_paths[1]}`
-  //let cat_file = `git cat-file -p HEAD:${modified_file_paths[1]}`
   console.log(modified_file_paths)
   let modified_files = []
   for (let i = 0; i < modified_file_paths.length; i ++) {
@@ -203,62 +151,23 @@ async function test_function(commit_sha) {
     } catch (error) {
       //console.log(error)
     }
-    
     modified_files.push(file)
   }
 
   
-  /*for (let i = 0; i < modified_files.length; i ++) {
+  for (let i = 0; i < modified_files.length; i ++) {
     let file = modified_files[i]
-    console.log(`************************************ ${file.path} ********************************`)
+    console.log(`************************************ ${file.current_path} ********************************`)
     console.log("###########PREVIOUS###########")
     console.log(file.previous)
     console.log("###########CURRENT###########")
     console.log(file.current)
     
-   //console.log(modified_file_paths[i])
-  }*/
+  }
   
 
 }
 
-
-
-
-
-
-
-
-
-/*
-async function get_all_commits_sha() {
-    const repo = await nodegit.Repository.open(local)
-  
-    const latest_master_commit = await repo.getMasterCommit()
-  
-    const commits = await new Promise(function (resolve, reject) {
-      var hist = latest_master_commit.history()
-      hist.start()
-      hist.on("end", resolve);
-      hist.on("error", reject);
-    });
-  
-    commits.reverse()
-  
-    for (var i = 0; i < commits.length; i++) {
-      //var sha = commits[i].sha().substr(0,7),   for the sha shorthand, but getting a file by sha shorthand doesn't work at the moment
-      
-      var sha = commits[i].sha(),
-        msg = commits[i].message().split('\n')[0]; //will need this later so I'm leaving it in
-        
-      console.log(sha + " " + msg);
-      var diff = await commits[i].getDiff()
-      
-     
-    }
-  
-  }
-*/
 
  
   
